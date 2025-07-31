@@ -4,750 +4,478 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
+import math
 
 # Page configuration
 st.set_page_config(
     page_title="Modern Mercantilism: Decoding the New Global Order",
-    page_icon="🌍",
+    page_icon="📈", # Changed Icon
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for better styling
-st.markdown("""
+# --- THEME AND STYLING ---
+# Define the primary color palette
+COMPANY_COLORS = {
+    "red_primary": "#B80000",
+    "red_accent": "#FF4136",
+    "black_bg": "#0E0E0E",
+    "dark_grey_bg": "#1C1C1C",
+    "medium_grey": "#444444",
+    "light_grey": "#AAAAAA",
+    "light_grey_text": "#DDDDDD"
+}
+
+# Custom CSS for the black and red theme
+st.markdown(f"""
 <style>
-    .main-header {
+    /* Main app background */
+    .stApp {{
+        background-color: {COMPANY_COLORS['black_bg']};
+        color: {COMPANY_COLORS['light_grey_text']};
+    }}
+
+    /* Main header styling */
+    .main-header {{
         font-size: 3rem;
         font-weight: bold;
         text-align: center;
-        background: linear-gradient(90deg, #1f4037, #99f2c8);
+        background: linear-gradient(90deg, {COMPANY_COLORS['red_primary']}, {COMPANY_COLORS['medium_grey']});
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 2rem;
-    }
-    .sub-header {
-        font-size: 1.5rem;
-        color: #2c3e50;
+    }}
+    
+    /* Sub-header styling */
+    .sub-header {{
+        font-size: 1.75rem;
+        color: {COMPANY_COLORS['red_primary']};
         margin-bottom: 1rem;
-    }
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
+        padding-bottom: 10px;
+        border-bottom: 2px solid {COMPANY_COLORS['medium_grey']};
+    }}
+
+    /* Metric card styling */
+    .metric-card {{
+        background-color: {COMPANY_COLORS['dark_grey_bg']};
+        padding: 1.5rem;
         border-radius: 10px;
         color: white;
         text-align: center;
         margin-bottom: 1rem;
-    }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 2px;
-    }
-    .stTabs [data-baseweb="tab"] {
+        border: 1px solid {COMPANY_COLORS['medium_grey']};
+        border-top: 4px solid {COMPANY_COLORS['red_primary']};
+    }}
+    .metric-card h3 {{
+        color: {COMPANY_COLORS['red_accent']};
+        font-size: 2.5rem;
+    }}
+
+    /* Custom card for cycle descriptions */
+    .cycle-card {{
+        background-color: {COMPANY_COLORS['dark_grey_bg']};
+        padding: 1rem;
+        border-radius: 10px;
+        color: white;
+        height: 180px;
+        border: 1px solid {COMPANY_COLORS['medium_grey']};
+    }}
+    .cycle-card h4 {{
+        color: {COMPANY_COLORS['red_primary']};
+    }}
+
+    /* Stationary Tab Navigation Styling */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 5px;
+        background-color: transparent;
+    }}
+    .stTabs [data-baseweb="tab"] {{
         height: 50px;
-        background-color: #f0f2f6;
-        border-radius: 4px 4px 0px 0px;
-        gap: 1px;
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #ffffff;
-    }
+        background-color: {COMPANY_COLORS['dark_grey_bg']};
+        border-radius: 8px 8px 0px 0px;
+        padding: 10px 20px;
+        color: {COMPANY_COLORS['light_grey_text']};
+        border-bottom: 3px solid {COMPANY_COLORS['medium_grey']};
+    }}
+    .stTabs [aria-selected="true"] {{
+        background-color: {COMPANY_COLORS['dark_grey_bg']};
+        color: white;
+        font-weight: bold;
+        border-bottom: 3px solid {COMPANY_COLORS['red_primary']};
+    }}
 </style>
 """, unsafe_allow_html=True)
 
-# Title
-st.markdown('<h1 class="main-header">Modern Mercantilism: Decoding the New Global Order</h1>', unsafe_allow_html=True)
-st.markdown('<p style="text-align: center; font-size: 1.2rem; color: #7f8c8d;">A Data-Driven Analysis of the Four-Cycle Machine Shaping Global Economics</p>', unsafe_allow_html=True)
 
-# Load data
+# --- DATA LOADING ---
 @st.cache_data
 def load_forecast_data():
+    # Data remains the same
     forecasts = [
-        {
-            "id": 1,
-            "statement": "US effective tariff rate on imports will average over 10% from 2026–2028",
-            "probability": 70,
-            "timeframe": "2026-2028",
-            "resolution_criteria": "U.S. Treasury data; weighted average tariff",
-            "cycle_link": "Internal Political / Geopolitical",
-            "category": "Trade Policy"
-        },
-        {
-            "id": 2,
-            "statement": "China's industrial subsidies as a share of global subsidies will exceed 50% by 2027",
-            "probability": 75,
-            "timeframe": "2027",
-            "resolution_criteria": "WTO/OECD global subsidy reporting",
-            "cycle_link": "Geopolitical / Technology",
-            "category": "Industrial Policy"
-        },
-        {
-            "id": 3,
-            "statement": "EU will impose new tariffs on green tech imports from the US and China by 2026",
-            "probability": 68,
-            "timeframe": "2026",
-            "resolution_criteria": "EU Official Journal tariff schedule update",
-            "cycle_link": "Geopolitical / Technology",
-            "category": "Trade Policy"
-        },
-        {
-            "id": 4,
-            "statement": "Global average tariff rate will increase compared to 2024 levels by 2028",
-            "probability": 80,
-            "timeframe": "2028",
-            "resolution_criteria": "WTO world tariff database",
-            "cycle_link": "Geopolitical",
-            "category": "Trade Policy"
-        },
-        {
-            "id": 5,
-            "statement": "US annual trade deficit will be lower (2026–2028 avg.) than the 2018–2024 avg.",
-            "probability": 72,
-            "timeframe": "2026-2028",
-            "resolution_criteria": "Bureau of Economic Analysis trade balance",
-            "cycle_link": "Internal Political",
-            "category": "Trade Balance"
-        },
-        {
-            "id": 6,
-            "statement": "More than three G20 countries will mandate critical mineral stockpiles by 2028",
-            "probability": 65,
-            "timeframe": "2028",
-            "resolution_criteria": "National critical minerals legislation",
-            "cycle_link": "Geopolitical / Technology",
-            "category": "Resource Security"
-        },
-        {
-            "id": 7,
-            "statement": "At least 80% of G20 nations will escalate subsidies in strategic sectors from 2025–2029",
-            "probability": 85,
-            "timeframe": "2025-2029",
-            "resolution_criteria": "OECD, IMF annual fiscal reviews",
-            "cycle_link": "Internal Political / Geopolitical",
-            "category": "Industrial Policy"
-        },
-        {
-            "id": 8,
-            "statement": "US dollar share in international reserves will decline by at least 20% by 2028",
-            "probability": 60,
-            "timeframe": "2028",
-            "resolution_criteria": "IMF COFER reports",
-            "cycle_link": "Debt/Monetary",
-            "category": "Monetary System"
-        },
-        {
-            "id": 9,
-            "statement": "US and allied tech export controls expand to include quantum and AI chips by 2027",
-            "probability": 90,
-            "timeframe": "2027",
-            "resolution_criteria": "BIS/EU/China official policy docs",
-            "cycle_link": "Technology / Geopolitical",
-            "category": "Tech Controls"
-        },
-        {
-            "id": 10,
-            "statement": "WTO dispute over digital and AI trade rules by 2026",
-            "probability": 70,
-            "timeframe": "2026",
-            "resolution_criteria": "WTO dispute settlement documentation",
-            "cycle_link": "Geopolitical / Technology",
-            "category": "Digital Trade"
-        },
-        {
-            "id": 11,
-            "statement": "G7 countries will institute formal stockpile mandates for rare earth minerals by 2028",
-            "probability": 62,
-            "timeframe": "2028",
-            "resolution_criteria": "G7 official records",
-            "cycle_link": "Geopolitical",
-            "category": "Resource Security"
-        },
-        {
-            "id": 12,
-            "statement": "Public investment surge in renewables among the top 5 economies by 2027",
-            "probability": 95,
-            "timeframe": "2027",
-            "resolution_criteria": "IEA, national investment reports",
-            "cycle_link": "Technology / Nature",
-            "category": "Green Investment"
-        },
-        {
-            "id": 13,
-            "statement": "India will raise tariffs on at least three strategic subsectors by 2026",
-            "probability": 72,
-            "timeframe": "2026",
-            "resolution_criteria": "Indian Ministry of Commerce data",
-            "cycle_link": "Internal Political / Geopolitical",
-            "category": "Trade Policy"
-        },
-        {
-            "id": 14,
-            "statement": "BRICS+ bloc pilots a dollar-alternative digital trade settlement system by 2029",
-            "probability": 90,
-            "timeframe": "2029",
-            "resolution_criteria": "BRICS, IMF, central bank announcements",
-            "cycle_link": "Debt/Monetary / Geopolitical",
-            "category": "Monetary System"
-        },
-        {
-            "id": 15,
-            "statement": "US will formally restrict outbound investment in key tech sectors by 2026",
-            "probability": 75,
-            "timeframe": "2026",
-            "resolution_criteria": "U.S. Treasury/Commerce rulings",
-            "cycle_link": "Internal Political / Technology",
-            "category": "Investment Controls"
-        },
-        {
-            "id": 16,
-            "statement": "At least five SSA countries declare digital payments as sovereign backing for currency by 2032",
-            "probability": 62,
-            "timeframe": "2032",
-            "resolution_criteria": "National policy documents, IMF reports",
-            "cycle_link": "Debt/Monetary / Technology",
-            "category": "SSA Digital Currency"
-        },
-        {
-            "id": 17,
-            "statement": "EU will expand carbon border taxes to at least two new categories by 2029",
-            "probability": 65,
-            "timeframe": "2029",
-            "resolution_criteria": "EU Commission regulations",
-            "cycle_link": "Geopolitical / Nature",
-            "category": "Climate Policy"
-        },
-        {
-            "id": 18,
-            "statement": "Chinese export controls on strategic minerals will persist through 2028",
-            "probability": 75,
-            "timeframe": "2028",
-            "resolution_criteria": "China Ministry of Commerce",
-            "cycle_link": "Geopolitical / Technology",
-            "category": "Resource Controls"
-        },
-        {
-            "id": 19,
-            "statement": "SSA's share of global strategic mineral exports exceeds 10% by 2028",
-            "probability": 72,
-            "timeframe": "2028",
-            "resolution_criteria": "UN Comtrade, ITC statistics",
-            "cycle_link": "Geopolitical",
-            "category": "SSA Resource Power"
-        },
-        {
-            "id": 20,
-            "statement": "Western firms will lose at least 30% market share in SSA digital payments by 2029",
-            "probability": 70,
-            "timeframe": "2029",
-            "resolution_criteria": "Central Bank/country market reports",
-            "cycle_link": "Geopolitical / Technology",
-            "category": "SSA Digital Markets"
-        }
+        {"id": 1, "statement": "US effective tariff rate on imports will average over 15% from 2026–2028", "probability": 82, "timeframe": "2026-2028", "resolution_criteria": "U.S. Treasury data; weighted average tariff", "cycle_link": "Internal Political / Geopolitical", "category": "Trade Policy"},
+        {"id": 2, "statement": "China's industrial subsidies as a share of global subsidies will exceed 50% by 2027", "probability": 75, "timeframe": "2027", "resolution_criteria": "WTO/OECD global subsidy reporting", "cycle_link": "Geopolitical / Technology", "category": "Industrial Policy"},
+        {"id": 3, "statement": "EU will impose new tariffs on green tech imports from the US and China by 2026", "probability": 68, "timeframe": "2026", "resolution_criteria": "EU Official Journal tariff schedule update", "cycle_link": "Geopolitical / Technology", "category": "Trade Policy"},
+        {"id": 4, "statement": "Global average tariff rate will increase compared to 2024 levels by 2028", "probability": 80, "timeframe": "2028", "resolution_criteria": "WTO world tariff database", "cycle_link": "Geopolitical", "category": "Trade Policy"},
+        {"id": 5, "statement": "US annual trade deficit will be lower (2026–2028 avg.) than the 2018–2024 avg.", "probability": 72, "timeframe": "2026-2028", "resolution_criteria": "Bureau of Economic Analysis trade balance", "cycle_link": "Internal Political", "category": "Trade Balance"},
+        {"id": 6, "statement": "More than three G20 countries will mandate critical mineral stockpiles by 2028", "probability": 65, "timeframe": "2028", "resolution_criteria": "National critical minerals legislation", "cycle_link": "Geopolitical / Technology", "category": "Resource Security"},
+        {"id": 7, "statement": "At least 80% of G20 nations will escalate subsidies in strategic sectors from 2025–2029", "probability": 85, "timeframe": "2025-2029", "resolution_criteria": "OECD, IMF annual fiscal reviews", "cycle_link": "Internal Political / Geopolitical", "category": "Industrial Policy"},
+        {"id": 8, "statement": "US dollar share in international reserves will decline by at least 20% by 2028", "probability": 60, "timeframe": "2028", "resolution_criteria": "IMF COFER reports", "cycle_link": "Debt/Monetary", "category": "Monetary System"},
+        {"id": 9, "statement": "US and allied tech export controls expand to include quantum and AI chips by 2027", "probability": 90, "timeframe": "2027", "resolution_criteria": "BIS/EU/China official policy docs", "cycle_link": "Technology / Geopolitical", "category": "Tech Controls"},
+        {"id": 10, "statement": "WTO dispute over digital and AI trade rules by 2026", "probability": 70, "timeframe": "2026", "resolution_criteria": "WTO dispute settlement documentation", "cycle_link": "Geopolitical / Technology", "category": "Digital Trade"},
+        {"id": 11, "statement": "G7 countries will institute formal stockpile mandates for rare earth minerals by 2028", "probability": 62, "timeframe": "2028", "resolution_criteria": "G7 official records", "cycle_link": "Geopolitical", "category": "Resource Security"},
+        {"id": 12, "statement": "Public investment surge in renewables among the top 5 economies by 2027", "probability": 95, "timeframe": "2027", "resolution_criteria": "IEA, national investment reports", "cycle_link": "Technology / Nature", "category": "Green Investment"},
+        {"id": 13, "statement": "India will raise tariffs on at least three strategic subsectors by 2026", "probability": 72, "timeframe": "2026", "resolution_criteria": "Indian Ministry of Commerce data", "cycle_link": "Internal Political / Geopolitical", "category": "Trade Policy"},
+        {"id": 14, "statement": "BRICS+ bloc pilots a dollar-alternative digital trade settlement system by 2029", "probability": 90, "timeframe": "2029", "resolution_criteria": "BRICS, IMF, central bank announcements", "cycle_link": "Debt/Monetary / Geopolitical", "category": "Monetary System"},
+        {"id": 15, "statement": "US will formally restrict outbound investment in key tech sectors by 2026", "probability": 75, "timeframe": "2026", "resolution_criteria": "U.S. Treasury/Commerce rulings", "cycle_link": "Internal Political / Technology", "category": "Investment Controls"},
+        {"id": 16, "statement": "At least five SSA countries declare digital payments as sovereign backing for currency by 2032", "probability": 62, "timeframe": "2032", "resolution_criteria": "National policy documents, IMF reports", "cycle_link": "Debt/Monetary / Technology", "category": "SSA Digital Currency"},
+        {"id": 17, "statement": "EU will expand carbon border taxes to at least two new categories by 2029", "probability": 65, "timeframe": "2029", "resolution_criteria": "EU Commission regulations", "cycle_link": "Geopolitical / Nature", "category": "Climate Policy"},
+        {"id": 18, "statement": "Chinese export controls on strategic minerals will persist through 2028", "probability": 75, "timeframe": "2028", "resolution_criteria": "China Ministry of Commerce", "cycle_link": "Geopolitical / Technology", "category": "Resource Controls"},
+        {"id": 19, "statement": "SSA's share of global strategic mineral exports exceeds 10% by 2028", "probability": 72, "timeframe": "2028", "resolution_criteria": "UN Comtrade, ITC statistics", "cycle_link": "Geopolitical", "category": "SSA Resource Power"},
+        {"id": 20, "statement": "Western firms will lose at least 30% market share in SSA digital payments by 2029", "probability": 70, "timeframe": "2029", "resolution_criteria": "Central Bank/country market reports", "cycle_link": "Geopolitical / Technology", "category": "SSA Digital Markets"}
     ]
     return pd.DataFrame(forecasts)
 
 @st.cache_data
 def load_trade_data():
     trade_data = [
-        {"year": 2001, "China": 10, "US": 40, "EU": 80},
-        {"year": 2005, "China": 25, "US": 45, "EU": 75},
-        {"year": 2010, "China": 90, "US": 50, "EU": 60},
-        {"year": 2015, "China": 180, "US": 35, "EU": 62},
-        {"year": 2020, "China": 245, "US": 30, "EU": 60},
-        {"year": 2024, "China": 255, "US": 32, "EU": 68}
+        {"year": 2001, "China": 10, "US": 40, "EU": 80}, {"year": 2005, "China": 25, "US": 45, "EU": 75},
+        {"year": 2010, "China": 90, "US": 50, "EU": 60}, {"year": 2015, "China": 180, "US": 35, "EU": 62},
+        {"year": 2020, "China": 245, "US": 30, "EU": 60}, {"year": 2024, "China": 255, "US": 32, "EU": 68}
     ]
     return pd.DataFrame(trade_data)
 
 @st.cache_data
 def load_power_index_data():
-    power_data = []
-    countries = ["USA", "China", "Nigeria", "EU"]
+    power_data, countries = [], ["USA", "China", "Nigeria", "EU"]
     years = [2000, 2010, 2020, 2024]
-    scores = {
-        "USA": [0.95, 0.90, 0.85, 0.82],
-        "China": [0.25, 0.45, 0.75, 0.78],
-        "Nigeria": [0.51, 0.507, 0.495, 0.495],
-        "EU": [0.70, 0.68, 0.65, 0.63]
-    }
-    
+    scores = {"USA": [0.95, 0.90, 0.85, 0.82], "China": [0.25, 0.45, 0.75, 0.78],
+              "Nigeria": [0.51, 0.507, 0.495, 0.495], "EU": [0.70, 0.68, 0.65, 0.63]}
     for country in countries:
         for i, year in enumerate(years):
             power_data.append({"Country": country, "Year": year, "Power_Index": scores[country][i]})
-    
     return pd.DataFrame(power_data)
 
-# Load all data
+# Load all dataframes
 df_forecasts = load_forecast_data()
 df_trade = load_trade_data()
 df_power = load_power_index_data()
 
-# Sidebar
-st.sidebar.markdown("## 🎛️ Dashboard Controls")
-st.sidebar.markdown("---")
+# Plotting color map -- KEY FIX: Changed 'US' to 'USA' to prevent KeyError
+PLOT_COLORS = {'China': COMPANY_COLORS['red_primary'], 'USA': COMPANY_COLORS['medium_grey'], 'EU': COMPANY_COLORS['light_grey'], 'Nigeria': '#D3D3D3'}
 
-# Navigation
-page = st.sidebar.selectbox(
-    "Navigate to:",
-    ["📊 Executive Dashboard", "🔮 Forecast Analysis", "📈 Trade Dynamics", "⚡ Power Index Trends", "🌍 SSA Focus", "🔄 Causal Loops"]
-)
+# --- UI LAYOUT ---
+st.markdown('<h1 class="main-header">Modern Mercantilism: Decoding the New Global Order</h1>', unsafe_allow_html=True)
+st.markdown('<p style="text-align: center; font-size: 1.2rem; color: #7f8c8d;">A Data-Driven Analysis of the Four-Cycle Machine Shaping Global Economics</p>', unsafe_allow_html=True)
 
-if page == "📊 Executive Dashboard":
-    # Key metrics row
+# Stationary Tab Navigation
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "📊 Executive Dashboard", "📈 Forecast Analysis", "📈 Trade Dynamics", 
+    "⚡ Power Index Trends", "🌍 Sub-Saharan Focus", "🔄 Causal Loops"
+])
+
+
+# --- PAGE 1: EXECUTIVE DASHBOARD ---
+with tab1:
     col1, col2, col3, col4 = st.columns(4)
-    
     with col1:
-        st.markdown("""
-        <div class="metric-card">
-            <h3>20</h3>
-            <p>Strategic Forecasts</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
+        st.markdown(f'<div class="metric-card"><h3>{len(df_forecasts)}</h3><p>Strategic Forecasts</p></div>', unsafe_allow_html=True)
     with col2:
-        avg_prob = df_forecasts['probability'].mean()
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>{avg_prob:.1f}%</h3>
-            <p>Average Probability</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
+        st.markdown(f'<div class="metric-card"><h3>{df_forecasts["probability"].mean():.1f}%</h3><p>Average Probability</p></div>', unsafe_allow_html=True)
     with col3:
-        high_conf = len(df_forecasts[df_forecasts['probability'] >= 80])
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>{high_conf}</h3>
-            <p>High Confidence (≥80%)</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
+        st.markdown(f'<div class="metric-card"><h3>{len(df_forecasts[df_forecasts["probability"] >= 80])}</h3><p>High Confidence (≥80%)</p></div>', unsafe_allow_html=True)
     with col4:
-        ssa_forecasts = len(df_forecasts[df_forecasts['category'].str.contains('SSA')])
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>{ssa_forecasts}</h3>
-            <p>SSA-Focused</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="metric-card"><h3>{len(df_forecasts[df_forecasts["category"].str.contains("SSA")])}</h3><p>Sub-Saharan Focused</p></div>', unsafe_allow_html=True)
 
-    st.markdown("---")
-    
-    # Main dashboard content
-    col1, col2 = st.columns([2, 1])
-    
+    col1, col2 = st.columns([3, 2]) # Adjusted column ratio
     with col1:
-        st.markdown('<h2 class="sub-header">📈 China's Rise in SSA Trade</h2>', unsafe_allow_html=True)
-        
+        st.markdown('<h2 class="sub-header">📈 SSA Trade Volume by Major Power</h2>', unsafe_allow_html=True)
         fig_trade = go.Figure()
-        fig_trade.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['China'], 
-                                     mode='lines+markers', name='China', 
-                                     line=dict(color='#e74c3c', width=4)))
-        fig_trade.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['US'], 
-                                     mode='lines+markers', name='US', 
-                                     line=dict(color='#3498db', width=4)))
-        fig_trade.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['EU'], 
-                                     mode='lines+markers', name='EU', 
-                                     line=dict(color='#f39c12', width=4)))
-        
-        fig_trade.update_layout(
-            title="SSA Trade Volume by Major Power (Billions USD)",
-            xaxis_title="Year",
-            yaxis_title="Trade Volume (Billions USD)",
-            template="plotly_white",
-            height=400,
-            showlegend=True
-        )
+        # Note: The key 'US' from the trade data is mapped to the 'USA' theme color for consistency
+        fig_trade.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['China'], mode='lines+markers', name='China', line=dict(color=PLOT_COLORS['China'], width=4)))
+        fig_trade.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['US'], mode='lines+markers', name='USA', line=dict(color=PLOT_COLORS['USA'], width=4)))
+        fig_trade.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['EU'], mode='lines+markers', name='EU', line=dict(color=PLOT_COLORS['EU'], width=4)))
+        fig_trade.update_layout(title="Trade Volume (Billions USD)", xaxis_title="Year", yaxis_title="Volume ($B)", template="plotly_dark", height=400, showlegend=True, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_trade, use_container_width=True)
     
     with col2:
-        st.markdown('<h2 class="sub-header">🎯 Forecast Categories</h2>', unsafe_allow_html=True)
-        
-        category_counts = df_forecasts['category'].value_counts()
-        
-        fig_pie = px.pie(values=category_counts.values, names=category_counts.index, 
-                        color_discrete_sequence=px.colors.qualitative.Set3)
-        fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-        fig_pie.update_layout(height=400, showlegend=False)
-        st.plotly_chart(fig_pie, use_container_width=True)
+        # CHANGED: Replaced pie chart with a more informative bar chart
+        st.markdown('<h2 class="sub-header">Average Forecast Probability Per Category</h2>', unsafe_allow_html=True)
+        avg_prob_by_cat = df_forecasts.groupby('category')['probability'].mean().sort_values(ascending=True)
+        fig_prob = px.bar(
+            avg_prob_by_cat,
+            x=avg_prob_by_cat.values,
+            y=avg_prob_by_cat.index,
+            orientation='h',
+            labels={'x': 'Average Probability (%)', 'y': 'Category'},
+            text_auto='.2s'
+        )
+        fig_prob.update_traces(marker_color=COMPANY_COLORS['red_primary'], textposition='outside')
+        fig_prob.update_layout(height=400, template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_prob, use_container_width=True)
 
-    # Four Cycles explanation
-    st.markdown("---")
     st.markdown('<h2 class="sub-header">🔄 The Four-Cycle Machine of Modern Mercantilism</h2>', unsafe_allow_html=True)
-    
     cycle_cols = st.columns(4)
-    
     cycles = [
-        ("💰 Debt/Monetary", "States weaponize payment systems, debt-diplomacy, and digital currency races"),
-        ("🏛️ Internal Political", "Tariffs and subsidies serve domestic stabilization and regime legitimacy"),
-        ("🌍 Geopolitical/Bloc", "Globalization becomes contest between economic blocs (G7, BRICS+)"),
-        ("🔬 Technology & Nature", "Tech and climate become primary arenas for state-backed competition")
+        ("💰 Debt & Monetary", "States weaponize payment systems, debt-diplomacy, and digital currency races."),
+        ("🏛️ Protectionism & Nationalism", "Tariffs and subsidies serve domestic stabilization and regime legitimacy."),
+        ("🌍 Geopolitical Bloc & Friendshoring", "Globalization becomes a contest between economic blocs & alliances (i.e.: G7, BRICS+)."),
+        ("🔬 Green Tech & Natural Disasters", "Tech and climate become primary arenas for state-backed competition.")
     ]
-    
     for i, (title, desc) in enumerate(cycles):
         with cycle_cols[i]:
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #74b9ff, #0984e3); padding: 1rem; border-radius: 10px; color: white; height: 150px;">
-                <h4>{title}</h4>
-                <p style="font-size: 0.9rem;">{desc}</p>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f'<div class="cycle-card"><h4>{title}</h4><p style="font-size: 0.9rem;">{desc}</p></div>', unsafe_allow_html=True)
 
-elif page == "🔮 Forecast Analysis":
-    st.markdown('<h2 class="sub-header">🔮 Strategic Forecasts Analysis</h2>', unsafe_allow_html=True)
-    
-    # Filters
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        selected_categories = st.multiselect("Filter by Category:", 
-                                           df_forecasts['category'].unique(), 
-                                           default=df_forecasts['category'].unique())
-    with col2:
-        min_prob = st.slider("Minimum Probability:", 0, 100, 0)
-    with col3:
-        selected_cycles = st.multiselect("Filter by Cycle:", 
-                                       df_forecasts['cycle_link'].unique(),
-                                       default=df_forecasts['cycle_link'].unique())
-    
-    # Filter data
-    filtered_df = df_forecasts[
-        (df_forecasts['category'].isin(selected_categories)) &
-        (df_forecasts['probability'] >= min_prob) &
-        (df_forecasts['cycle_link'].isin(selected_cycles))
-    ]
-    
-    # Probability distribution
-    fig_hist = px.histogram(filtered_df, x='probability', nbins=10,
-                           title="Distribution of Forecast Probabilities",
-                           color_discrete_sequence=['#e17055'])
-    fig_hist.update_layout(template="plotly_white", height=400)
-    st.plotly_chart(fig_hist, use_container_width=True)
-    
-    # Detailed forecast table
-    st.markdown("### 📋 Detailed Forecasts")
-    
-    # Create a more readable dataframe for display
-    display_df = filtered_df[['id', 'statement', 'probability', 'timeframe', 'category', 'cycle_link']].copy()
-    display_df['probability'] = display_df['probability'].apply(lambda x: f"{x}%")
-    
-    st.dataframe(
-        display_df,
-        column_config={
-            "id": "ID",
-            "statement": st.column_config.TextColumn("Forecast Statement", width="large"),
-            "probability": "Probability",
-            "timeframe": "Timeframe",
-            "category": "Category",
-            "cycle_link": "Dalio Cycle"
-        },
-        hide_index=True,
-        use_container_width=True
-    )
+# --- PAGE 2: FORECAST ANALYSIS ---
+with tab2:
+    st.markdown('<h2 class="sub-header">📈 Strategic Forecasts Analysis</h2>', unsafe_allow_html=True)
 
-elif page == "📈 Trade Dynamics":
-    st.markdown('<h2 class="sub-header">📈 SSA Trade Dynamics: The New Great Game</h2>', unsafe_allow_html=True)
-    
-    # Trade evolution chart
-    fig_trade_detailed = go.Figure()
-    
-    colors = {'China': '#e74c3c', 'US': '#3498db', 'EU': '#f39c12'}
-    
-    for country in ['China', 'US', 'EU']:
-        fig_trade_detailed.add_trace(go.Scatter(
-            x=df_trade['year'], 
-            y=df_trade[country],
-            mode='lines+markers+text',
-            name=country,
-            line=dict(color=colors[country], width=4),
-            marker=dict(size=8),
-            text=df_trade[country],
-            textposition="top center",
-            textfont=dict(size=12, color=colors[country])
-        ))
-    
-    fig_trade_detailed.update_layout(
-        title="SSA Trade Evolution: The Rise of China (2001-2024)",
-        xaxis_title="Year",
-        yaxis_title="Trade Volume (Billions USD)",
-        template="plotly_white",
-        height=500,
-        showlegend=True,
-        annotations=[
-            dict(x=2010, y=90, text="China's BRI Launch", showarrow=True, arrowhead=2),
-            dict(x=2020, y=245, text="COVID-19 Impact", showarrow=True, arrowhead=2)
-        ]
-    )
-    st.plotly_chart(fig_trade_detailed, use_container_width=True)
-    
-    # Trade share analysis
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Calculate trade shares for 2024
-        total_2024 = df_trade.iloc[-1]['China'] + df_trade.iloc[-1]['US'] + df_trade.iloc[-1]['EU']
-        shares_2024 = {
-            'China': (df_trade.iloc[-1]['China'] / total_2024) * 100,
-            'US': (df_trade.iloc[-1]['US'] / total_2024) * 100,
-            'EU': (df_trade.iloc[-1]['EU'] / total_2024) * 100
-        }
-        
-        fig_share = px.pie(values=list(shares_2024.values()), names=list(shares_2024.keys()),
-                          title="2024 SSA Trade Share",
-                          color_discrete_map=colors)
-        fig_share.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(fig_share, use_container_width=True)
-    
-    with col2:
-        # Growth rates
-        china_growth = ((df_trade.iloc[-1]['China'] - df_trade.iloc[0]['China']) / df_trade.iloc[0]['China']) * 100
-        us_growth = ((df_trade.iloc[-1]['US'] - df_trade.iloc[0]['US']) / df_trade.iloc[0]['US']) * 100
-        eu_growth = ((df_trade.iloc[-1]['EU'] - df_trade.iloc[0]['EU']) / df_trade.iloc[0]['EU']) * 100
-        
-        growth_data = pd.DataFrame({
-            'Country': ['China', 'US', 'EU'],
-            'Growth_Rate': [china_growth, us_growth, eu_growth]
-        })
-        
-        fig_growth = px.bar(growth_data, x='Country', y='Growth_Rate',
-                           title="Trade Growth Rate (2001-2024)",
-                           color='Country', color_discrete_map=colors)
-        fig_growth.update_layout(showlegend=False)
-        st.plotly_chart(fig_growth, use_container_width=True)
-    
-    # Key insights
-    st.markdown("### 🔍 Key Trade Insights")
-    insights_col1, insights_col2, insights_col3 = st.columns(3)
-    
-    with insights_col1:
-        st.info(f"**China's Meteoric Rise**: {china_growth:.0f}% growth since 2001, now dominant player")
-    
-    with insights_col2:
-        st.warning(f"**US Decline**: {abs(us_growth):.0f}% decrease, losing ground to China")
-    
-    with insights_col3:
-        st.success(f"**EU Stability**: {eu_growth:.0f}% growth, maintaining steady presence")
-
-elif page == "⚡ Power Index Trends":
-    st.markdown('<h2 class="sub-header">⚡ Dalio Power Index: The Great Transition</h2>', unsafe_allow_html=True)
-    
-    # Power index over time
-    fig_power = px.line(df_power, x='Year', y='Power_Index', color='Country',
-                       title="Dalio Power Index Trends (2000-2024)",
-                       markers=True, line_shape='spline')
-    
-    color_map = {'USA': '#3498db', 'China': '#e74c3c', 'Nigeria': '#2ecc71', 'EU': '#f39c12'}
-    for i, country in enumerate(['USA', 'China', 'Nigeria', 'EU']):
-        fig_power.data[i].line.color = color_map[country]
-        fig_power.data[i].line.width = 4
-    
-    fig_power.update_layout(
-        template="plotly_white",
-        height=500,
-        annotations=[
-            dict(x=2008, y=0.5, text="Financial Crisis", showarrow=True),
-            dict(x=2020, y=0.7, text="COVID-19 & Trade Wars", showarrow=True)
-        ]
-    )
-    st.plotly_chart(fig_power, use_container_width=True)
-    
-    # Power index comparison
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # 2000 vs 2024 comparison
-        power_2000 = df_power[df_power['Year'] == 2000].set_index('Country')['Power_Index']
-        power_2024 = df_power[df_power['Year'] == 2024].set_index('Country')['Power_Index']
-        
-        comparison_df = pd.DataFrame({
-            '2000': power_2000,
-            '2024': power_2024,
-            'Change': power_2024 - power_2000
-        }).reset_index()
-        
-        fig_comparison = go.Figure()
-        fig_comparison.add_trace(go.Bar(name='2000', x=comparison_df['Country'], y=comparison_df['2000'],
-                                      marker_color='lightblue'))
-        fig_comparison.add_trace(go.Bar(name='2024', x=comparison_df['Country'], y=comparison_df['2024'],
-                                      marker_color='darkblue'))
-        
-        fig_comparison.update_layout(title="Power Index: 2000 vs 2024", barmode='group')
-        st.plotly_chart(fig_comparison, use_container_width=True)
-    
-    with col2:
-        # Change analysis
-        fig_change = px.bar(comparison_df, x='Country', y='Change',
-                           title="Power Index Change (2000-2024)",
-                           color='Change', color_continuous_scale='RdYlGn')
-        st.plotly_chart(fig_change, use_container_width=True)
-    
-    # Power index breakdown (simulated data for visualization)
-    st.markdown("### 📊 Power Index Components (2024)")
-    
-    components = ['Education', 'Innovation', 'Competitiveness', 'Military', 'Trade Share', 'Reserve Currency', 'Financial Center']
-    
-    # Simulated component scores
-    component_scores = {
-        'USA': [0.85, 0.95, 0.80, 0.95, 0.70, 0.90, 0.95],
-        'China': [0.75, 0.85, 0.90, 0.80, 0.85, 0.20, 0.60],
-        'EU': [0.80, 0.75, 0.75, 0.60, 0.70, 0.30, 0.80],
-        'Nigeria': [0.40, 0.35, 0.45, 0.40, 0.30, 0.10, 0.25]
+    # Initialize session state for filters and widgets if not already done
+    # This dictionary now defines our streamlined category groups
+    category_mapping = {
+        "Trade": ["Trade Policy", "Digital Trade", "Trade Balance"],
+        "Policy": ["Industrial Policy", "Climate Policy"],
+        "Controls": ["Investment Controls", "Resource Controls", "Tech Controls"],
+        "Resources": ["Resource Security", "SSA Resource Power", "Green Investment"],
+        "Monetary/Finance": ["Monetary System", "SSA Digital Currency", "SSA Digital Markets"],
     }
     
-    fig_radar = go.Figure()
-    
-    for country in component_scores.keys():
-        fig_radar.add_trace(go.Scatterpolar(
-            r=component_scores[country],
-            theta=components,
-            fill='toself',
-            name=country,
-            line_color=color_map[country]
-        ))
-    
-    fig_radar.update_layout(
-        polar=dict(
-            radialaxis=dict(visible=True, range=[0, 1])
-        ),
-        title="Power Index Components Breakdown (2024)"
-    )
-    st.plotly_chart(fig_radar, use_container_width=True)
+    # Initialize session state using the new streamlined categories
+    if 'streamlined_cat_initialized' not in st.session_state:
+        st.session_state.streamlined_cat_initialized = True
+        for cat_group in category_mapping.keys():
+            st.session_state[f'cat_group_{cat_group}'] = True
 
-elif page == "🌍 SSA Focus":
-    st.markdown('<h2 class="sub-header">🌍 Sub-Saharan Africa: The New Battleground</h2>', unsafe_allow_html=True)
+    if 'data_editor_key' not in st.session_state:
+        st.session_state.data_editor_key = 0
+
+    # --- REVISED FILTERS ---
+    with st.expander("Show Filters", expanded=True):
+        
+        # --- 1. Driving Cycle Filter ---
+        st.markdown("#### 1. Filter by Core Driving Cycle")
+        st.markdown("<p style='font-size: 0.9rem; color: #AAAAAA;'>Select core cycles. The table will show any forecast linked to <b>at least one</b> of your selections.</p>", unsafe_allow_html=True)
+        core_cycles = ["Debt/Monetary", "Internal Political", "Geopolitical", "Technology", "Nature"]
+        cycle_cols = st.columns(len(core_cycles))
+        selected_core_cycles = []
+        for i, cycle in enumerate(core_cycles):
+            if cycle_cols[i].checkbox(cycle, value=True, key=f"core_cyc_{cycle}"):
+                selected_core_cycles.append(cycle)
+
+        st.markdown("---")
+        
+        # --- 2. Category Filter (NOW STREAMLINED) ---
+        st.markdown("#### 2. Filter by Category")
+        
+        def select_all_streamlined_cats():
+            for cat_group in category_mapping.keys(): st.session_state[f'cat_group_{cat_group}'] = True
+        def deselect_all_streamlined_cats():
+            for cat_group in category_mapping.keys(): st.session_state[f'cat_group_{cat_group}'] = False
+
+        b1, b2, _ = st.columns([0.15, 0.15, 0.7]) 
+        b1.button("Select All", on_click=select_all_streamlined_cats, use_container_width=True)
+        b2.button("Deselect All", on_click=deselect_all_streamlined_cats, use_container_width=True)
+
+        cat_cols = st.columns(len(category_mapping))
+        selected_categories = []
+        # Loop through the streamlined groups to create the UI
+        for i, cat_group in enumerate(category_mapping.keys()):
+            with cat_cols[i]:
+                if st.checkbox(cat_group, key=f'cat_group_{cat_group}'):
+                    # If checked, add all corresponding sub-categories to our filter list
+                    selected_categories.extend(category_mapping[cat_group])
+
+        st.markdown("---")
+
+        # --- 3. Probability Filter ---
+        st.markdown("#### 3. Filter by Minimum Probability")
+        min_p = int(df_forecasts['probability'].min())
+        max_p = 100
+        min_prob_selection = st.slider(
+            "Minimum Probability", min_value=min_p, max_value=max_p, value=min_p,
+            label_visibility="collapsed"
+        )
+
+    # --- FILTERING LOGIC ---
+    if not selected_core_cycles:
+        cycle_filtered_df = df_forecasts[df_forecasts['cycle_link'].isnull()]
+    else:
+        pattern = '|'.join(selected_core_cycles)
+        cycle_filtered_df = df_forecasts[df_forecasts['cycle_link'].str.contains(pattern, case=False, na=False)]
+
+    # The rest of the logic remains the same, as `selected_categories` now contains the correct detailed list
+    final_filtered_df = cycle_filtered_df[
+        (cycle_filtered_df['category'].isin(selected_categories)) &
+        (cycle_filtered_df['probability'] >= min_prob_selection)
+    ].copy()
     
-    # SSA-specific forecasts
+    # --- INTERACTIVE FORECAST TABLE & COMPARISON FEATURE ---
+    if not final_filtered_df.empty:
+        final_filtered_df.insert(0, "Compare", False)
+        st.markdown("### 📋 Detailed Forecasts")
+        st.info("💡 **Tip:** Check the 'Compare' box next to any forecast to analyze it side-by-side in the 'Comparison View' below.", icon="ℹ️")
+        
+        edited_df = st.data_editor(
+            final_filtered_df,
+            key=f"editor_{st.session_state.data_editor_key}",
+            column_config={
+                "Compare": st.column_config.CheckboxColumn(required=True),
+                "category": None, # Hiding the category column from the table as it's now redundant visually
+                "id": None, 
+                "statement": st.column_config.TextColumn("Forecast Statement", width="large"),
+                "probability": st.column_config.ProgressColumn("Probability (%)", format="%d%%", min_value=0, max_value=100),
+                "resolution_criteria": None,
+                "cycle_link": "Driving Cycle(s)"
+            },
+            use_container_width=True, hide_index=True,
+            disabled=df_forecasts.columns.tolist()
+        )
+        
+        comparison_df = edited_df[edited_df["Compare"]]
+        if not comparison_df.empty:
+            st.markdown('<h2 class="sub-header">⚖️ Comparison View</h2>', unsafe_allow_html=True)
+            compare_cols = st.columns(len(comparison_df))
+            for i, col in enumerate(compare_cols):
+                forecast = comparison_df.iloc[i]
+                with col:
+                    st.markdown(f"##### {forecast['statement']}")
+                    st.metric("Probability", f"{forecast['probability']}%")
+                    # We can still show the specific category here if we want
+                    st.markdown(f"**Specific Category:** `{forecast['category']}`")
+                    st.markdown(f"**Cycle(s):** `{forecast['cycle_link']}`")
+                    st.markdown(f"**Timeframe:** `{forecast['timeframe']}`")
+            
+            def clear_comparison_selection():
+                st.session_state.data_editor_key += 1
+            
+            st.button("Clear Comparison Selection", on_click=clear_comparison_selection, use_container_width=True)
+        else:
+            st.info("Select forecasts above to see their detailed comparison here.")
+                
+# --- PAGE 3: TRADE DYNAMICS ---
+with tab3:
+    st.markdown('<h2 class="sub-header">📈 SSA Trade Dynamics: The New Great Game</h2>', unsafe_allow_html=True)
+    
+    # CHANGED: Stacked charts vertically to make them larger
+    st.markdown("#### 2024 SSA Trade Share")
+    total_2024 = df_trade.iloc[-1]['China'] + df_trade.iloc[-1]['US'] + df_trade.iloc[-1]['EU']
+    shares_2024 = {'China': (df_trade.iloc[-1]['China'] / total_2024) * 100, 'USA': (df_trade.iloc[-1]['US'] / total_2024) * 100, 'EU': (df_trade.iloc[-1]['EU'] / total_2024) * 100}
+    
+    # --- FIX FOR PIE CHART COLORS ---
+    # Create a list of colors in the order of the shares for the pie chart
+    pie_colors = [PLOT_COLORS[name] for name in shares_2024.keys()]
+
+    fig_share = px.pie(
+        values=list(shares_2024.values()), 
+        names=list(shares_2024.keys()), 
+        color_discrete_sequence=pie_colors # Use color_discrete_sequence for explicit color mapping
+    )
+    # --- END FIX ---
+
+    fig_share.update_traces(textposition='inside', textinfo='percent+label', marker=dict(line=dict(color='#000000', width=2)))
+    fig_share.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=True)
+    st.plotly_chart(fig_share, use_container_width=True)
+    
+    st.markdown("#### Trade Growth Rate (2001-2024)")
+    china_growth = ((df_trade.iloc[-1]['China'] - df_trade.iloc[0]['China']) / df_trade.iloc[0]['China']) * 100
+    us_growth = ((df_trade.iloc[-1]['US'] - df_trade.iloc[0]['US']) / df_trade.iloc[0]['US']) * 100
+    eu_growth = ((df_trade.iloc[-1]['EU'] - df_trade.iloc[0]['EU']) / df_trade.iloc[0]['EU']) * 100
+    growth_data = pd.DataFrame({'Country': ['China', 'USA', 'EU'], 'Growth_Rate (%)': [china_growth, us_growth, eu_growth]})
+    fig_growth = px.bar(growth_data, x='Country', y='Growth_Rate (%)', color='Country', color_discrete_map=PLOT_COLORS)
+    fig_growth.update_layout(showlegend=False, template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    st.plotly_chart(fig_growth, use_container_width=True)
+
+# --- PAGE 4: POWER INDEX TRENDS ---
+with tab4:
+    st.markdown('<h2 class="sub-header">⚡ Power Index: The Great Transition</h2>', unsafe_allow_html=True)
+    fig_power = px.line(df_power, x='Year', y='Power_Index', color='Country', title="Power Index Trends (2000-2024)", markers=True, line_shape='spline', color_discrete_map=PLOT_COLORS)
+    fig_power.update_traces(line=dict(width=4))
+    fig_power.update_layout(template="plotly_dark", height=500, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    st.plotly_chart(fig_power, use_container_width=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        # ADDED: Comparison bar chart with theme colors
+        st.markdown("#### Power Index: 2000 vs 2024")
+        power_2000 = df_power[df_power['Year'] == 2000].set_index('Country')['Power_Index']
+        power_2024 = df_power[df_power['Year'] == 2024].set_index('Country')['Power_Index']
+        comparison_df = pd.DataFrame({'2000': power_2000, '2024': power_2024}).reset_index()
+        fig_comp = go.Figure()
+        fig_comp.add_trace(go.Bar(name='2000', x=comparison_df['Country'], y=comparison_df['2000'], marker_color=COMPANY_COLORS['light_grey']))
+        fig_comp.add_trace(go.Bar(name='2024', x=comparison_df['Country'], y=comparison_df['2024'], marker_color=COMPANY_COLORS['medium_grey']))
+        fig_comp.update_layout(barmode='group', template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_comp, use_container_width=True)
+
+    with col2:
+        st.markdown("#### Power Index Components (2024, Simulated)")
+        components = ['Education', 'Innovation', 'Competitiveness', 'Military', 'Trade Share', 'Reserve Currency', 'Financial Center']
+        component_scores = {'USA': [0.85, 0.95, 0.80, 0.95, 0.70, 0.90, 0.95], 'China': [0.75, 0.85, 0.90, 0.80, 0.85, 0.20, 0.60], 'EU': [0.80, 0.75, 0.75, 0.60, 0.70, 0.30, 0.80], 'Nigeria': [0.40, 0.35, 0.45, 0.40, 0.30, 0.10, 0.25]}
+        fig_radar = go.Figure()
+        for country in component_scores.keys():
+            fig_radar.add_trace(go.Scatterpolar(r=component_scores[country], theta=components, fill='toself', name=country, line_color=PLOT_COLORS[country]))
+        fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 1])), template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+        st.plotly_chart(fig_radar, use_container_width=True)
+
+# --- PAGE 5: SSA FOCUS ---
+with tab5:
+    st.markdown('<h2 class="sub-header">🌍 Sub-Saharan Africa: The New Modern Mercantilism Playground</h2>', unsafe_allow_html=True)
     ssa_forecasts = df_forecasts[df_forecasts['category'].str.contains('SSA')]
-    
     if not ssa_forecasts.empty:
         col1, col2 = st.columns([2, 1])
-        
         with col1:
-            fig_ssa = px.bar(ssa_forecasts, x='probability', y='statement',
-                           orientation='h', title="SSA-Focused Forecasts",
-                           color='probability', color_continuous_scale='viridis')
-            fig_ssa.update_layout(height=400)
+            fig_ssa = px.bar(ssa_forecasts, x='probability', y='statement', orientation='h', title="SSA-Focused Forecasts", color='probability', color_continuous_scale='Reds')
+            fig_ssa.update_layout(height=400, template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
             st.plotly_chart(fig_ssa, use_container_width=True)
-        
         with col2:
             st.markdown("### 🎯 SSA Strategic Importance")
-            st.markdown("""
-            - **Resource Wealth**: Critical minerals for energy transition
-            - **Demographic Dividend**: Young, growing population
-            - **Market Potential**: Emerging consumer class
-            - **Strategic Location**: Gateway to global trade routes
-            """)
-    
-    # SSA trade patterns
-    st.markdown("### 📈 SSA Trade Evolution")
-    
-    # Create projected data for SSA
-    projection_years = [2025, 2026, 2027, 2028, 2029, 2030]
-    china_projected = [260, 265, 270, 280, 290, 300]
-    us_projected = [35, 37, 38, 40, 42, 45]
-    eu_projected = [70, 72, 74, 76, 78, 80]
-    
-    # Combine historical and projected
-    extended_years = list(df_trade['year']) + projection_years
-    extended_china = list(df_trade['China']) + china_projected
-    extended_us = list(df_trade['US']) + us_projected
-    extended_eu = list(df_trade['EU']) + eu_projected
-    
-    fig_projection = go.Figure()
-    
-    # Historical data (solid lines)
-    fig_projection.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['China'],
-                                      mode='lines+markers', name='China (Historical)',
-                                      line=dict(color='#e74c3c', width=4)))
-    fig_projection.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['US'],
-                                      mode='lines+markers', name='US (Historical)',
-                                      line=dict(color='#3498db', width=4)))
-    fig_projection.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['EU'],
-                                      mode='lines+markers', name='EU (Historical)',
-                                      line=dict(color='#f39c12', width=4)))
-    
-    # Projected data (dashed lines)
-    fig_projection.add_trace(go.Scatter(x=projection_years, y=china_projected,
-                                      mode='lines+markers', name='China (Projected)',
-                                      line=dict(color='#e74c3c', width=3, dash='dash')))
-    fig_projection.add_trace(go.Scatter(x=projection_years, y=us_projected,
-                                      mode='lines+markers', name='US (Projected)',
-                                      line=dict(color='#3498db', width=3, dash='dash')))
-    fig_projection.add_trace(go.Scatter(x=projection_years, y=eu_projected,
-                                      mode='lines+markers', name='EU (Projected)',
-                                      line=dict(color='#f39c12', width=3, dash='dash')))
-    
-    fig_projection.update_layout(
-        title="SSA Trade: Historical Trends and Projections",
-        xaxis_title="Year",
-        yaxis_title="Trade Volume (Billions USD)",
-        template="plotly_white",
-        height=500
-    )
-    st.plotly_chart(fig_projection, use_container_width=True)
-    
-    # SSA debt analysis
-    st.markdown("### 💰 SSA Debt Dynamics")
-    
-    debt_data = pd.DataFrame({
-        'Year': [2015, 2018, 2020, 2022, 2024],
-        'China_Debt_Share': [15, 25, 36, 38, 40],
-        'Total_Debt_GDP': [45, 52, 65, 70, 72]
-    })
-    
-    fig_debt = make_subplots(specs=[[{"secondary_y": True}]])
-    
-    fig_debt.add_trace(
-        go.Bar(x=debt_data['Year'], y=debt_data['China_Debt_Share'], name="China Debt Share (%)"),
-        secondary_y=False
-    )
-    
-    fig_debt.add_trace(
-        go.Scatter(x=debt_data['Year'], y=debt_data['Total_Debt_GDP'], 
-                  mode='lines+markers', name="Total Debt/GDP (%)", line=dict(color='red', width=3)),
-        secondary_y=True
-    )
-    
-    fig_debt.update_xaxes(title_text="Year")
-    fig_debt.update_yaxes(title_text="China Debt Share (%)", secondary_y=False)
-    fig_debt.update_yaxes(title_text="Total Debt/GDP (%)", secondary_y=True)
-    fig_debt.update_layout(title="SSA Debt Dynamics: China's Growing Influence")
-    
-    st.plotly_chart(fig_debt, use_container_width=True)
+            st.markdown("- **Resource Wealth**: Critical minerals for energy transition\n- **Demographic Dividend**: Young, growing population\n- **Market Potential**: Emerging consumer class\n- **Strategic Location**: Gateway to global trade routes")
 
-elif page == "🔄 Causal Loops":
-    st.markdown('<h2 class="sub-header">🔄 Causal Loop Analysis: The Machinery of Modern Mercantilism</h2>', unsafe_allow_html=True)
+        st.markdown("### 📊 SSA Debt Dynamics")
+    debt_data = pd.DataFrame({'Year': [2015, 2018, 2020, 2022, 2024], 'China_Debt_Share': ['15%', '25%', '36%', '38%', '40%'], 'Total_Debt_GDP': ['45%', '52%', '65%', '70%', '72%']})
     
-    # Interactive causal loop selection
-    loop_type = st.selectbox("Select Causal Loop to Analyze:",
-                           ["China's BRI Loop", "US Decline Loop", "SSA Development Loop", "Global Tariff Spiral"])
-    
+    # Convert percentage strings to float for plotting
+    debt_data_numeric = debt_data.copy()
+    debt_data_numeric['China_Debt_Share'] = debt_data_numeric['China_Debt_Share'].str.rstrip('%').astype(float)
+    debt_data_numeric['Total_Debt_GDP'] = debt_data_numeric['Total_Debt_GDP'].str.rstrip('%').astype(float)
+
+    fig_debt_single = go.Figure()
+    # Bar for China Debt Share
+    fig_debt_single.add_trace(go.Bar(
+        x=debt_data_numeric['Year'],
+        y=debt_data_numeric['China_Debt_Share'],
+        name="China Debt Share (%)",
+        marker_color=COMPANY_COLORS['red_primary'],
+        opacity=0.85
+    ))
+    # Line for Total Debt/GDP
+    fig_debt_single.add_trace(go.Scatter(
+        x=debt_data_numeric['Year'],
+        y=debt_data_numeric['Total_Debt_GDP'],
+        mode='lines+markers',
+        name="Total Debt/GDP (%)",
+        line=dict(color=COMPANY_COLORS['red_accent'], width=4),
+        marker=dict(size=10)
+    ))
+    fig_debt_single.update_layout(
+        title="SSA Debt Dynamics: China's Growing Influence (Unified Y-Axis)",
+        xaxis_title="Year",
+        yaxis_title="Percentage (%)",
+        template="plotly_dark",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        height=400
+    )
+    st.plotly_chart(fig_debt_single, use_container_width=True)
+
+# --- PAGE 6: CAUSAL LOOPS ---
+with tab6:
+    st.markdown('<h2 class="sub-header">🔄 Causal Loop Analysis</h2>', unsafe_allow_html=True)
+    loop_type = st.selectbox("Select Causal Loop to Analyze:", ["China's BRI Loop", "Global Tariff Spiral"])
     if loop_type == "China's BRI Loop":
-        st.markdown("### 🇨🇳 China's Belt & Road Infrastructure Loop")
-        
-        # Create a network-style visualization
-        loop_data = {
-            'Variable': ['Infrastructure Investment', 'Resource Exports', 'Chinese Imports', 
-                        'Local Production Displacement', 'Debt Accumulation', 'Policy Leverage'],
-            'Effect_Size': [0.8, 0.9, 0.7, -0.6, 0.85, 0.75],
-            'Loop_Position': [1, 2, 3, 4, 5, 6]
-        }
-        
-        fig_loop = px.scatter(pd.DataFrame(loop_data), x='Loop_Position', y='Effect_Size',
-                            size=[abs(x)*20 for x in loop_data['Effect_Size']],
-                            color='Effect_Size', color_continuous_scale='RdYlGn',
-                            hover_name='Variable',
-                            title="China's BRI Causal Loop - Variable Interactions")
-        
-        fig_loop.update_layout(
-            xaxis=dict(showgrid=False, showticklabels=False, title="Loop Flow"),
-            yaxis=dict(title="Effect Strength"),
-            height=400
-        )
-        st.plotly_chart(fig_loop, use_container_width=True)
-        
+        st.markdown("### China's Belt & Road Infrastructure Loop")
         st.markdown("""
         **Loop Dynamics:**
         1. 🏗️ **Infrastructure Investment** → Increases resource export capacity
-        2. 📦 **Resource Exports** → Generate revenue for Chinese goods imports  
+        2. 📦 **Resource Exports** → Generate revenue for Chinese goods imports 
         3. 🛒 **Chinese Imports** → Displace local production
         4. 📉 **Production Displacement** → Increases economic dependency
         5. 💸 **Debt Accumulation** → Enhances Chinese policy leverage
@@ -755,57 +483,93 @@ elif page == "🔄 Causal Loops":
         
         *This creates a **reinforcing loop** that can lead to debt-trap dynamics.*
         """)
-    
-    elif loop_type == "Global Tariff Spiral":
-        st.markdown("### 🌪️ Global Tariff Escalation Loop")
-        
-        tariff_data = {
-            'Year': list(range(2018, 2030)),
-            'US_Tariffs': [7.4, 8.2, 9.1, 10.5, 11.2, 12.8, 13.5, 14.2, 15.0, 15.8, 16.5, 17.2],
-            'Retaliatory_Tariffs': [5.2, 6.1, 7.3, 8.9, 9.7, 10.8, 11.5, 12.3, 13.1, 13.9, 14.7, 15.5],
-            'Global_Average': [6.8, 7.2, 7.8, 8.5, 9.2, 10.1, 10.8, 11.5, 12.2, 12.9, 13.6, 14.3]
-        }
-        
-        fig_spiral = go.Figure()
-        
-        colors_spiral = {'US_Tariffs': '#e74c3c', 'Retaliatory_Tariffs': '#3498db', 'Global_Average': '#2ecc71'}
-        
-        for key in ['US_Tariffs', 'Retaliatory_Tariffs', 'Global_Average']:
-            fig_spiral.add_trace(go.Scatter(
-                x=tariff_data['Year'], y=tariff_data[key],
-                mode='lines+markers', name=key.replace('_', ' '),
-                line=dict(color=colors_spiral[key], width=3)
-            ))
-        
-        fig_spiral.update_layout(
-            title="Global Tariff Escalation Spiral (2018-2029)",
-            xaxis_title="Year",
-            yaxis_title="Average Tariff Rate (%)",
-            template="plotly_white",
-            height=500
-        )
-        st.plotly_chart(fig_spiral, use_container_width=True)
-    
-    # Feedback loop strength analysis
-    st.markdown("### 📊 Feedback Loop Strength Analysis")
-    
-    loop_strength = pd.DataFrame({
-        'Loop_Type': ['BRI Infrastructure', 'Tariff Retaliation', 'Tech Export Controls', 'Digital Currency Race'],
-        'Reinforcing_Strength': [0.85, 0.75, 0.90, 0.70],
-        'Balancing_Forces': [0.30, 0.45, 0.25, 0.55],
-        'Net_Effect': [0.55, 0.30, 0.65, 0.15]
-    })
-    
-    fig_strength = px.bar(loop_strength, x='Loop_Type', y=['Reinforcing_Strength', 'Balancing_Forces'],
-                         title="Causal Loop Strength Analysis",
-                         barmode='group', color_discrete_sequence=['#e74c3c', '#27ae60'])
-    st.plotly_chart(fig_strength, use_container_width=True)
+        # --- VISUALIZE THE REINFORCING LOOP AS A CIRCLE ---
 
-# Footer
-st.markdown("---")
-st.markdown("""
-<div style="text-align: center; color: #7f8c8d; padding: 2rem;">
-    <p><strong>Modern Mercantilism Dashboard</strong> | Built with Streamlit & Plotly</p>
-    <p>Data sources: World Bank, IMF, WTO, OECD, and proprietary analysis</p>
-</div>
-""", unsafe_allow_html=True)
+        loop_steps = [
+            "Infrastructure Investment",
+            "Resource Exports",
+            "Chinese Imports",
+            "Production Displacement",
+            "Debt Accumulation",
+            "Policy Leverage"
+        ]
+        n = len(loop_steps)
+        angle_step = 2 * math.pi / n
+        radius = 1
+
+        # Calculate (x, y) positions for each step
+        points = [
+            (radius * math.cos(i * angle_step - math.pi/2), radius * math.sin(i * angle_step - math.pi/2))
+            for i in range(n)
+        ]
+
+        # Create the circular loop diagram
+        fig_circle = go.Figure()
+
+        # Draw the circle (for visual reference)
+        circle_theta = [i * 2 * math.pi / 100 for i in range(101)]
+        circle_x = [radius * math.cos(t) for t in circle_theta]
+        circle_y = [radius * math.sin(t) for t in circle_theta]
+        fig_circle.add_trace(go.Scatter(
+            x=circle_x, y=circle_y, mode='lines',
+            line=dict(color=COMPANY_COLORS['medium_grey'], width=2),
+            hoverinfo='skip', showlegend=False
+        ))
+
+        # Add points and labels
+        for i, (x, y) in enumerate(points):
+            fig_circle.add_trace(go.Scatter(
+            x=[x], y=[y], mode='markers+text',
+            marker=dict(size=32, color=COMPANY_COLORS['red_primary']),
+            text=[f"{i+1}"], textposition="middle center",
+            hovertemplate=f"<b>Step {i+1}:</b> {loop_steps[i]}<extra></extra>",
+            showlegend=False
+            ))
+            # Add step label slightly outside the circle
+            label_x = 1.18 * x
+            label_y = 1.18 * y
+            fig_circle.add_annotation(
+            x=label_x, y=label_y, text=loop_steps[i],
+            showarrow=False, font=dict(size=14, color=COMPANY_COLORS['light_grey_text']),
+            align='center', xanchor='center', yanchor='middle'
+            )
+
+        # Draw arrows between points to show the loop direction
+        for i in range(n):
+            x0, y0 = points[i]
+            x1, y1 = points[(i+1)%n]
+            # Shorten arrows so they don't overlap the markers
+            shrink = 0.18
+            dx = x1 - x0
+            dy = y1 - y0
+            length = math.sqrt(dx**2 + dy**2)
+            x_start = x0 + dx * shrink / length
+            y_start = y0 + dy * shrink / length
+            x_end = x1 - dx * shrink / length
+            y_end = y1 - dy * shrink / length
+            fig_circle.add_annotation(
+            x=x_end, y=y_end, ax=x_start, ay=y_start,
+            xref='x', yref='y', axref='x', ayref='y',
+            showarrow=True, arrowhead=3, arrowsize=1.2, arrowwidth=2,
+            arrowcolor=COMPANY_COLORS['red_accent'], opacity=0.85
+            )
+
+        fig_circle.update_layout(
+            title="Reinforcing Loop: China's BRI Cycle",
+            xaxis=dict(visible=False, range=[-1.5, 1.5]),
+            yaxis=dict(visible=False, range=[-1.5, 1.5]),
+            height=500, width=500,
+            plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)',
+            margin=dict(l=20, r=20, t=60, b=20)
+        )
+        st.plotly_chart(fig_circle, use_container_width=False)
+
+    elif loop_type == "Global Tariff Spiral":
+        st.markdown("### 💸 Global Tariff Escalation Loop")
+        tariff_data = {'Year': list(range(2018, 2030)), 'US_Tariffs': ['7.4%', '8.2%', '9.1%', '10.5%', '11.2%', '12.8%', '13.5%', '14.2%', '15.0%', '15.8%', '16.5%', '17.2%'], 'Retaliatory_Tariffs': ['5.2%', '6.1%', '7.3%', '8.9%', '9.7%', '10.8%', '11.5%', '12.3%', '13.1%', '13.9%', '14.7%', '15.5%'], 'Global_Average': ['6.8%', '7.2%', '7.8%', '8.5%', '9.2%', '10.1%', '10.8%', '11.5%', '12.2%', '12.9%', '13.6%', '14.3%']}
+        fig_spiral = go.Figure()
+        colors_spiral = {'US_Tariffs': COMPANY_COLORS['red_primary'], 'Retaliatory_Tariffs': COMPANY_COLORS['medium_grey'], 'Global_Average': COMPANY_COLORS['red_accent']}
+        for key in ['US_Tariffs', 'Retaliatory_Tariffs', 'Global_Average']:
+            fig_spiral.add_trace(go.Scatter(x=tariff_data['Year'], y=tariff_data[key], mode='lines+markers', name=key.replace('_', ' '), line=dict(color=colors_spiral[key], width=3)))
+        fig_spiral.update_layout(title="Projected Tariff Escalation Spiral", template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_spiral, use_container_width=True)

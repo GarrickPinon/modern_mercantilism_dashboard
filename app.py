@@ -142,7 +142,38 @@ def load_trade_data():
         {"year": 2010, "China": 90, "US": 50, "EU": 60}, {"year": 2015, "China": 180, "US": 35, "EU": 62},
         {"year": 2020, "China": 245, "US": 30, "EU": 60}, {"year": 2024, "China": 255, "US": 32, "EU": 68}
     ]
-    return pd.DataFrame(trade_data)
+    df = pd.DataFrame(trade_data)
+    
+    # --- NEW: Forecasting Logic ---
+    forecast_years = list(range(2025, 2035))
+    forecast_data = []
+    
+    # Calculate historical CAGR (Compound Annual Growth Rate)
+    start_year = df['year'].min()
+    end_year = df['year'].max()
+    num_years = end_year - start_year
+    
+    cagr_china = (df[df['year'] == end_year]['China'].iloc[0] / df[df['year'] == start_year]['China'].iloc[0])**(1/num_years) - 1
+    cagr_us = (df[df['year'] == end_year]['US'].iloc[0] / df[df['year'] == start_year]['US'].iloc[0])**(1/num_years) - 1
+    cagr_eu = (df[df['year'] == end_year]['EU'].iloc[0] / df[df['year'] == start_year]['EU'].iloc[0])**(1/num_years) - 1
+
+    # Adjust CAGR based on qualitative forecasts (protectionism vs. strategic investment)
+    # China's BRI and strategic focus suggest continued strong growth.
+    # US/EU tariffs and friendshoring suggest slower, more deliberate growth.
+    forecast_cagr = {'China': cagr_china * 1.05, 'US': cagr_us * 0.8, 'EU': cagr_eu * 0.9}
+
+    last_values = df[df['year'] == end_year].iloc[0]
+    
+    for year in forecast_years:
+        new_row = {'year': year}
+        for country in ['China', 'US', 'EU']:
+            last_value = last_values[country]
+            new_row[country] = last_value * (1 + forecast_cagr[country])
+            last_values[country] = new_row[country]
+        forecast_data.append(new_row)
+        
+    df_forecast = pd.DataFrame(forecast_data)
+    return pd.concat([df, df_forecast]).reset_index(drop=True)
 
 @st.cache_data
 def load_power_index_data():
@@ -150,10 +181,42 @@ def load_power_index_data():
     years = [2000, 2010, 2020, 2024]
     scores = {"USA": [0.95, 0.90, 0.85, 0.82], "China": [0.25, 0.45, 0.75, 0.78],
               "Nigeria": [0.51, 0.507, 0.495, 0.495], "EU": [0.70, 0.68, 0.65, 0.63]}
+    
+    df_list = []
     for country in countries:
         for i, year in enumerate(years):
-            power_data.append({"Country": country, "Year": year, "Power_Index": scores[country][i]})
-    return pd.DataFrame(power_data)
+            df_list.append({"Country": country, "Year": year, "Power_Index": scores[country][i]})
+    df = pd.DataFrame(df_list)
+
+    # --- NEW: Forecasting Logic ---
+    forecast_years = list(range(2025, 2035))
+    
+    # Calculate annualized rate of change from the last period (2020-2024)
+    last_period = df[df['Year'].isin([2020, 2024])]
+    annual_changes = {}
+    for country in countries:
+        start_val = last_period[(last_period['Country'] == country) & (last_period['Year'] == 2020)]['Power_Index'].iloc[0]
+        end_val = last_period[(last_period['Country'] == country) & (last_period['Year'] == 2024)]['Power_Index'].iloc[0]
+        annual_changes[country] = (end_val - start_val) / 4
+
+    # Adjust rates based on qualitative forecasts (dollar decline, BRICS+, SSA mineral power)
+    annual_changes['USA'] *= 1.5  # Accelerate decline based on monetary forecasts
+    annual_changes['China'] *= 1.1 # Maintain strong growth
+    annual_changes['Nigeria'] += 0.001 # Slight increase based on resource power forecasts
+    
+    forecast_data = []
+    last_values = df[df['Year'] == 2024].set_index('Country')['Power_Index']
+    
+    for year in forecast_years:
+        for country in countries:
+            new_val = last_values[country] + annual_changes[country]
+            # Add caps to prevent scores from going above 1 or below 0
+            new_val = min(max(new_val, 0), 1)
+            forecast_data.append({'Country': country, 'Year': year, 'Power_Index': new_val})
+            last_values[country] = new_val
+
+    df_forecast = pd.DataFrame(forecast_data)
+    return pd.concat([df, df_forecast]).reset_index(drop=True)
 
 # Load all dataframes
 df_forecasts = load_forecast_data()
@@ -188,17 +251,27 @@ with tab1:
 
     col1, col2 = st.columns([3, 2]) # Adjusted column ratio
     with col1:
-        st.markdown('<h2 class="sub-header">📈 SSA Trade Volume by Major Power</h2>', unsafe_allow_html=True)
+        st.markdown('<h2 class="sub-header">📈 SSA Trade Volume by Major Power (with Forecast)</h2>', unsafe_allow_html=True)
         fig_trade = go.Figure()
-        # Note: The key 'US' from the trade data is mapped to the 'USA' theme color for consistency
-        fig_trade.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['China'], mode='lines+markers', name='China', line=dict(color=PLOT_COLORS['China'], width=4)))
-        fig_trade.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['US'], mode='lines+markers', name='USA', line=dict(color=PLOT_COLORS['USA'], width=4)))
-        fig_trade.add_trace(go.Scatter(x=df_trade['year'], y=df_trade['EU'], mode='lines+markers', name='EU', line=dict(color=PLOT_COLORS['EU'], width=4)))
-        fig_trade.update_layout(title="Trade Volume (Billions USD)", xaxis_title="Year", yaxis_title="Volume ($B)", template="plotly_dark", height=400, showlegend=True, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        
+        # --- MODIFIED: Split data for historical and forecast plotting ---
+        hist_trade = df_trade[df_trade['year'] <= 2024]
+        fcst_trade = df_trade[df_trade['year'] >= 2024] # Overlap one year for continuous line
+
+        # Plot historical data with solid lines
+        fig_trade.add_trace(go.Scatter(x=hist_trade['year'], y=hist_trade['China'], mode='lines+markers', name='China (Hist.)', line=dict(color=PLOT_COLORS['China'], width=4)))
+        fig_trade.add_trace(go.Scatter(x=hist_trade['year'], y=hist_trade['US'], mode='lines+markers', name='USA (Hist.)', line=dict(color=PLOT_COLORS['USA'], width=4)))
+        fig_trade.add_trace(go.Scatter(x=hist_trade['year'], y=hist_trade['EU'], mode='lines+markers', name='EU (Hist.)', line=dict(color=PLOT_COLORS['EU'], width=4)))
+
+        # Plot forecast data with dashed lines
+        fig_trade.add_trace(go.Scatter(x=fcst_trade['year'], y=fcst_trade['China'], mode='lines', name='China (Fcst.)', line=dict(color=PLOT_COLORS['China'], width=3, dash='dash')))
+        fig_trade.add_trace(go.Scatter(x=fcst_trade['year'], y=fcst_trade['US'], mode='lines', name='USA (Fcst.)', line=dict(color=PLOT_COLORS['USA'], width=3, dash='dash')))
+        fig_trade.add_trace(go.Scatter(x=fcst_trade['year'], y=fcst_trade['EU'], mode='lines', name='EU (Fcst.)', line=dict(color=PLOT_COLORS['EU'], width=3, dash='dash')))
+
+        fig_trade.update_layout(title="Trade Volume (Billions USD) - Historical & Forecast to 2034", xaxis_title="Year", yaxis_title="Volume ($B)", template="plotly_dark", height=400, showlegend=True, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig_trade, use_container_width=True)
     
     with col2:
-        # CHANGED: Replaced pie chart with a more informative bar chart
         st.markdown('<h2 class="sub-header">Average Forecast Probability Per Category</h2>', unsafe_allow_html=True)
         avg_prob_by_cat = df_forecasts.groupby('category')['probability'].mean().sort_values(ascending=True)
         fig_prob = px.bar(
@@ -355,30 +428,26 @@ with tab2:
 with tab3:
     st.markdown('<h2 class="sub-header">📈 SSA Trade Dynamics: The New Great Game</h2>', unsafe_allow_html=True)
     
-    # CHANGED: Stacked charts vertically to make them larger
     st.markdown("#### 2024 SSA Trade Share")
-    total_2024 = df_trade.iloc[-1]['China'] + df_trade.iloc[-1]['US'] + df_trade.iloc[-1]['EU']
-    shares_2024 = {'China': (df_trade.iloc[-1]['China'] / total_2024) * 100, 'USA': (df_trade.iloc[-1]['US'] / total_2024) * 100, 'EU': (df_trade.iloc[-1]['EU'] / total_2024) * 100}
+    trade_2024 = df_trade[df_trade['year'] == 2024].iloc[0]
+    total_2024 = trade_2024['China'] + trade_2024['US'] + trade_2024['EU']
+    shares_2024 = {'China': (trade_2024['China'] / total_2024) * 100, 'USA': (trade_2024['US'] / total_2024) * 100, 'EU': (trade_2024['EU'] / total_2024) * 100}
     
-    # --- FIX FOR PIE CHART COLORS ---
-    # Create a list of colors in the order of the shares for the pie chart
     pie_colors = [PLOT_COLORS[name] for name in shares_2024.keys()]
-
     fig_share = px.pie(
         values=list(shares_2024.values()), 
         names=list(shares_2024.keys()), 
-        color_discrete_sequence=pie_colors # Use color_discrete_sequence for explicit color mapping
+        color_discrete_sequence=pie_colors
     )
-    # --- END FIX ---
-
     fig_share.update_traces(textposition='inside', textinfo='percent+label', marker=dict(line=dict(color='#000000', width=2)))
     fig_share.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=True)
     st.plotly_chart(fig_share, use_container_width=True)
     
     st.markdown("#### Trade Growth Rate (2001-2024)")
-    china_growth = ((df_trade.iloc[-1]['China'] - df_trade.iloc[0]['China']) / df_trade.iloc[0]['China']) * 100
-    us_growth = ((df_trade.iloc[-1]['US'] - df_trade.iloc[0]['US']) / df_trade.iloc[0]['US']) * 100
-    eu_growth = ((df_trade.iloc[-1]['EU'] - df_trade.iloc[0]['EU']) / df_trade.iloc[0]['EU']) * 100
+    start_trade = df_trade[df_trade['year'] == 2001].iloc[0]
+    china_growth = ((trade_2024['China'] - start_trade['China']) / start_trade['China']) * 100
+    us_growth = ((trade_2024['US'] - start_trade['US']) / start_trade['US']) * 100
+    eu_growth = ((trade_2024['EU'] - start_trade['EU']) / start_trade['EU']) * 100
     growth_data = pd.DataFrame({'Country': ['China', 'USA', 'EU'], 'Growth_Rate (%)': [china_growth, us_growth, eu_growth]})
     fig_growth = px.bar(growth_data, x='Country', y='Growth_Rate (%)', color='Country', color_discrete_map=PLOT_COLORS)
     fig_growth.update_layout(showlegend=False, template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
@@ -386,15 +455,27 @@ with tab3:
 
 # --- PAGE 4: POWER INDEX TRENDS ---
 with tab4:
-    st.markdown('<h2 class="sub-header">⚡ Power Index: The Great Transition</h2>', unsafe_allow_html=True)
-    fig_power = px.line(df_power, x='Year', y='Power_Index', color='Country', title="Power Index Trends (2000-2024)", markers=True, line_shape='spline', color_discrete_map=PLOT_COLORS)
-    fig_power.update_traces(line=dict(width=4))
-    fig_power.update_layout(template="plotly_dark", height=500, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    st.markdown('<h2 class="sub-header">⚡ Power Index: The Great Transition (with Forecast)</h2>', unsafe_allow_html=True)
+    
+    # --- MODIFIED: Split data for historical and forecast plotting ---
+    hist_power = df_power[df_power['Year'] <= 2024]
+    fcst_power = df_power[df_power['Year'] >= 2024]
+
+    fig_power = go.Figure()
+
+    for country in df_power['Country'].unique():
+        # Plot historical data
+        country_hist = hist_power[hist_power['Country'] == country]
+        fig_power.add_trace(go.Scatter(x=country_hist['Year'], y=country_hist['Power_Index'], name=f'{country} (Hist.)', mode='lines+markers', line=dict(color=PLOT_COLORS[country], width=4, shape='spline')))
+        # Plot forecast data
+        country_fcst = fcst_power[fcst_power['Country'] == country]
+        fig_power.add_trace(go.Scatter(x=country_fcst['Year'], y=country_fcst['Power_Index'], name=f'{country} (Fcst.)', mode='lines', line=dict(color=PLOT_COLORS[country], width=3, dash='dash', shape='spline')))
+    
+    fig_power.update_layout(title="Power Index Trends - Historical & Forecast to 2034", template="plotly_dark", height=500, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
     st.plotly_chart(fig_power, use_container_width=True)
 
     col1, col2 = st.columns(2)
     with col1:
-        # ADDED: Comparison bar chart with theme colors
         st.markdown("#### Power Index: 2000 vs 2024")
         power_2000 = df_power[df_power['Year'] == 2000].set_index('Country')['Power_Index']
         power_2024 = df_power[df_power['Year'] == 2024].set_index('Country')['Power_Index']
@@ -429,42 +510,47 @@ with tab5:
             st.markdown("### 🎯 SSA Strategic Importance")
             st.markdown("- **Resource Wealth**: Critical minerals for energy transition\n- **Demographic Dividend**: Young, growing population\n- **Market Potential**: Emerging consumer class\n- **Strategic Location**: Gateway to global trade routes")
 
-        st.markdown("### 📊 SSA Debt Dynamics")
-    debt_data = pd.DataFrame({'Year': [2015, 2018, 2020, 2022, 2024], 'China_Debt_Share': ['15%', '25%', '36%', '38%', '40%'], 'Total_Debt_GDP': ['45%', '52%', '65%', '70%', '72%']})
-    
-    # Convert percentage strings to float for plotting
-    debt_data_numeric = debt_data.copy()
-    debt_data_numeric['China_Debt_Share'] = debt_data_numeric['China_Debt_Share'].str.rstrip('%').astype(float)
-    debt_data_numeric['Total_Debt_GDP'] = debt_data_numeric['Total_Debt_GDP'].str.rstrip('%').astype(float)
+    # --- REVISED: Changed to a 100% Stacked Bar Chart for Debt Composition ---
+    st.markdown("### 📊 Composition of SSA External Public Debt")
+    debt_data = pd.DataFrame({'Year': [2015, 2018, 2020, 2022, 2024], 'China_Debt_Share': [15, 25, 36, 38, 40]})
+    debt_data['Other_Lenders_Share'] = 100 - debt_data['China_Debt_Share']
 
-    fig_debt_single = go.Figure()
-    # Bar for China Debt Share
-    fig_debt_single.add_trace(go.Bar(
-        x=debt_data_numeric['Year'],
-        y=debt_data_numeric['China_Debt_Share'],
-        name="China Debt Share (%)",
-        marker_color=COMPANY_COLORS['red_primary'],
-        opacity=0.85
-    ))
-    # Line for Total Debt/GDP
-    fig_debt_single.add_trace(go.Scatter(
-        x=debt_data_numeric['Year'],
-        y=debt_data_numeric['Total_Debt_GDP'],
-        mode='lines+markers',
-        name="Total Debt/GDP (%)",
-        line=dict(color=COMPANY_COLORS['red_accent'], width=4),
-        marker=dict(size=10)
-    ))
-    fig_debt_single.update_layout(
-        title="SSA Debt Dynamics: China's Growing Influence (Unified Y-Axis)",
+    # Melt the dataframe to make it suitable for a stacked bar chart
+    debt_melted = debt_data.melt(
+        id_vars='Year', 
+        value_vars=['China_Debt_Share', 'Other_Lenders_Share'],
+        var_name='Lender',
+        value_name='Share'
+    )
+    # Clean up the lender names
+    debt_melted['Lender'] = debt_melted['Lender'].replace({'China_Debt_Share': 'China', 'Other_Lenders_Share': 'Other Lenders'})
+    
+    fig_debt_stacked = px.bar(
+        debt_melted,
+        x='Year',
+        y='Share',
+        color='Lender',
+        title="China's Share of SSA External Debt vs. Other Lenders",
+        barmode='stack',
+        text_auto='.2s',
+        color_discrete_map={
+            'China': COMPANY_COLORS['red_primary'],
+            'Other Lenders': COMPANY_COLORS['medium_grey']
+        }
+    )
+    fig_debt_stacked.update_traces(textangle=0, textposition='inside')
+    fig_debt_stacked.update_layout(
         xaxis_title="Year",
-        yaxis_title="Percentage (%)",
+        yaxis_title="Share of External Debt (%)",
+        yaxis_ticksuffix='%',
         template="plotly_dark",
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        height=400
+        height=400,
+        legend_title_text='Lender'
     )
-    st.plotly_chart(fig_debt_single, use_container_width=True)
+    st.plotly_chart(fig_debt_stacked, use_container_width=True)
+
 
 # --- PAGE 6: CAUSAL LOOPS ---
 with tab6:
@@ -566,10 +652,25 @@ with tab6:
 
     elif loop_type == "Global Tariff Spiral":
         st.markdown("### 💸 Global Tariff Escalation Loop")
-        tariff_data = {'Year': list(range(2018, 2030)), 'US_Tariffs': ['7.4%', '8.2%', '9.1%', '10.5%', '11.2%', '12.8%', '13.5%', '14.2%', '15.0%', '15.8%', '16.5%', '17.2%'], 'Retaliatory_Tariffs': ['5.2%', '6.1%', '7.3%', '8.9%', '9.7%', '10.8%', '11.5%', '12.3%', '13.1%', '13.9%', '14.7%', '15.5%'], 'Global_Average': ['6.8%', '7.2%', '7.8%', '8.5%', '9.2%', '10.1%', '10.8%', '11.5%', '12.2%', '12.9%', '13.6%', '14.3%']}
+        # --- MODIFIED: Extended tariff forecast to 2034 ---
+        tariff_data = {
+            'Year': list(range(2018, 2035)),
+            'US_Tariffs': [f"{7.4 + 0.8*i:.1f}%" for i in range(17)],
+            'Retaliatory_Tariffs': [f"{5.2 + 0.9*i:.1f}%" for i in range(17)],
+            'Global_Average': [f"{6.8 + 0.7*i:.1f}%" for i in range(17)]
+        }
         fig_spiral = go.Figure()
         colors_spiral = {'US_Tariffs': COMPANY_COLORS['red_primary'], 'Retaliatory_Tariffs': COMPANY_COLORS['medium_grey'], 'Global_Average': COMPANY_COLORS['red_accent']}
         for key in ['US_Tariffs', 'Retaliatory_Tariffs', 'Global_Average']:
-            fig_spiral.add_trace(go.Scatter(x=tariff_data['Year'], y=tariff_data[key], mode='lines+markers', name=key.replace('_', ' '), line=dict(color=colors_spiral[key], width=3)))
-        fig_spiral.update_layout(title="Projected Tariff Escalation Spiral", template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+            # Convert percentage string to float for plotting
+            y_values = [float(v.strip('%')) for v in tariff_data[key]]
+            fig_spiral.add_trace(go.Scatter(x=tariff_data['Year'], y=y_values, mode='lines+markers', name=key.replace('_', ' '), line=dict(color=colors_spiral[key], width=3)))
+        
+        fig_spiral.update_layout(
+            title="Projected Tariff Escalation Spiral (to 2034)", 
+            template="plotly_dark", 
+            paper_bgcolor='rgba(0,0,0,0)', 
+            plot_bgcolor='rgba(0,0,0,0)',
+            yaxis_title="Average Tariff Rate (%)"
+        )
         st.plotly_chart(fig_spiral, use_container_width=True)

@@ -17,7 +17,7 @@ Quantsultant™© 2025 build.
 
 Amassed 386,585 XPS on DataCamp, has 0 chill.
 
-One-sit full-stack deployment. 
+One-sit, full-stack deployment. 
 
 All I needed were red & black screenshots, and then I just made an app while I was at it. Mercantilism decoded.
 

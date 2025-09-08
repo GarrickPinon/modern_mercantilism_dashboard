@@ -34,8 +34,6 @@ During the summer of 2025, I was invited to apply to Bridgewater Associates and 
 The Modern Mercantilism Dashboard:
 An interactive dashboard to explore contemporary trade imbalances, capital flows, and policy levers through the lens of modern mercantilism. Built with a focus on modular ML pipelines, narrative-driven visualizations, and serverless deployment.
 
-Here’s the skill stack embedded in your **Modern Mercantilism Dashboard**—cleaned, categorized, and ready for README or pitch deck drop-in:
-
 ---
 
 ## 🧰 Core Libraries & Tools

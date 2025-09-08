@@ -63,16 +63,19 @@ Here’s the skill stack embedded in your **Modern Mercantilism Dashboard**—cl
 - **AWS Lambda** – serverless execution of core modules  
 - **API Gateway** – exposing endpoints for modular access
 
+
 ---
 
-##  🧮 Skills Demonstrated
+## 🧮 Skills Demonstrated
 
-- Full-stack dashboard architecture  
-- Modular ML pipeline design  
-- Interactive data visualization  
-- Clean ETL and data hygiene practices  
-- Serverless deployment strategy  
-- Strategic narrative framing for economic systems
+- Elite data management and EDA – top 0.1% across 13M DataCamp students  
+- Modular ML pipeline design – deployment, interpretability, and microservice packaging  
+- Narrative-driven consulting – strategic trimming and council-grade pitching  
+- Visual & cognitive clarity – masked heatmaps, gradient palettes, and layout precision  
+- Rapid full-stack app deployment – Streamlit, Flask, and README polish  
+- Advanced mathematical methods – Bayesian stats, Monte Carlo, sentiment modeling  
+- Applied LaTeX formatting – textbook-style formula rendering and README presentation  
+- Markdown + GitHub fluency – scroll-depth optimization and hiring-season packaging
 
 ---
 
@@ -166,20 +169,73 @@ Serverless deployment-ready (AWS Lambda + API Gateway)
 
 ### 📘 Statistical & Mathematical Formulas
 
+You got it, Garrick. Here's the corrected and polished **Statistical & Mathematical Formulas** section, end-to-end, with clean differentiation between textbook-style formulas and code translations. I’ve fixed the formatting inconsistencies (like duplicate lines and escaped characters) and aligned everything for visual and cognitive clarity:
+
+---
+
+### 📘 Statistical & Mathematical Formulas
+
 This dashboard blends rigorous statistical modeling with interpretable forecasting logic. Below are the core mathematical methods powering the proprietary scoring system, in case you want to learn more on your own:
 
-- **Bayesian Inference** – posterior weighting, belief updating, and probabilistic scoring  
-  $$ P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)} $$
+---
 
-- **Monte Carlo Estimation** – stochastic sampling and expectation approximation  
-  $$ \mathbb{E}[f(X)] \approx \frac{1}{N} \sum_{i=1}^{N} f(x_i) $$
+### 🧠 Bayesian Inference  
+**Concept:** Posterior weighting, belief updating, and probabilistic scoring
 
-- **Sentiment Distribution Analysis** – signal drift detection via KL divergence  
-  $$ D_{KL}(P || Q) = \sum_{x} P(x) \log \frac{P(x)}{Q(x)} $$
+**Textbook-style:**  
+\[
+P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)}
+\]
 
-- **Gradient-Based Optimization** – parameter tuning via loss minimization  
-  $$ \theta_{t+1} = \theta_t - \eta \cdot \nabla_\theta J(\theta) $$
+**Code translation:**  
+```python
+P_A_given_B = (P_B_given_A * P_A) / P_B
+```
 
+---
+
+### 🎲 Monte Carlo Estimation  
+**Concept:** Stochastic sampling and expectation approximation
+
+**Textbook-style:**  
+\[
+\mathbb{E}[f(X)] \approx \frac{1}{N} \sum_{i=1}^{N} f(x_i)
+\]
+
+**Code translation:**  
+```python
+expected_value = sum(f(x_i) for x_i in samples) / N
+```
+
+---
+
+### 🎭 Sentiment Distribution Analysis  
+**Concept:** Signal drift detection via KL divergence
+
+**Textbook-style:**  
+\[
+D_{KL}(P || Q) = \sum_{x} P(x) \log \frac{P(x)}{Q(x)}
+\]
+
+**Code translation:**  
+```python
+kl_divergence = sum(P[x] * log(P[x] / Q[x]) for x in X)
+```
+
+---
+
+### ⚙️ Gradient-Based Optimization  
+**Concept:** Parameter tuning via loss minimization
+
+**Textbook-style:**  
+\[
+\theta_{t+1} = \theta_t - \eta \cdot \nabla_\theta J(\theta)
+\]
+
+**Code translation:**  
+```python
+theta_next = theta - learning_rate * gradient(J, theta)
+```
 ---
 
 ### 🧬 Proprietary Scoring Model

@@ -11,7 +11,7 @@
 
 Quantsultant™© 2025 build. 
 
-![Modern Mercantilism Dashboard Screenshot]("images\Modern Mercantilism\GitHubMMDSS.png")
+[Modern Mercantilism Dashboard Screenshot]
 
 
 Amassed 386,585 XPS on DataCamp, has 0 chill.

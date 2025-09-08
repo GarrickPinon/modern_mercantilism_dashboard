@@ -19,7 +19,7 @@ Amassed 386,585 XPS on DataCamp, has 0 chill.
 
 One-sit full-stack deployment. 
 
-All I needed were red & black screenshots, and then I just made an app while I was at it. RLHF feedback. Mercantilism decoded.
+All I needed were red & black screenshots, and then I just made an app while I was at it. Mercantilism decoded.
 
 ![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red?logo=streamlit)

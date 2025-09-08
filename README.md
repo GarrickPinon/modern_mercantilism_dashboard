@@ -150,14 +150,35 @@ Serverless deployment-ready (AWS Lambda + API Gateway)
 
 ---
 ### 📊 Statistical & Mathematical Foundations
-- **Bayesian Inference** – posterior weighting, belief updating, and probabilistic scoring  
-- **Monte Carlo Methods** – stochastic sampling and uncertainty quantification  
+- **Bayesian Inference** – posterior weighting, belief updating, and probabilistic scoring
+- **Monte Carlo Methods** – stochastic sampling and uncertainty quantification
 - **Sentiment Analysis** – NLP-driven signal extraction from policy and media text  
 - **Linear Algebra** – vectorized representations, matrix ops, and dimensionality reduction  
 - **Optimization** – likelihood maximization, regularization, and model calibration  
 - **Information Theory** – entropy, KL divergence, and signal-to-noise diagnostics  
 - **Probability Theory** – conditional distributions, expectation, and variance modeling  
 - **Calculus** – integration over distributions, gradient-based tuning
+
+---
+
+
+### 📘 Statistical & Mathematical Formulas
+
+This dashboard blends rigorous statistical modeling with interpretable forecasting logic. Below are the core mathematical methods powering the proprietary scoring system, in case you want to learn more on your own:
+
+- **Bayesian Inference** – posterior weighting, belief updating, and probabilistic scoring  
+  $$ P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)} $$
+
+- **Monte Carlo Estimation** – stochastic sampling and expectation approximation  
+  $$ \mathbb{E}[f(X)] \approx \frac{1}{N} \sum_{i=1}^{N} f(x_i) $$
+
+- **Sentiment Distribution Analysis** – signal drift detection via KL divergence  
+  $$ D_{KL}(P || Q) = \sum_{x} P(x) \log \frac{P(x)}{Q(x)} $$
+
+- **Gradient-Based Optimization** – parameter tuning via loss minimization  
+  $$ \theta_{t+1} = \theta_t - \eta \cdot \nabla_\theta J(\theta) $$
+
+---
 
 ### 🧬 Proprietary Scoring Model
 A proprietary, tailored, Bayesian-weighted scoring model that fuses sentiment priors with trade signals to forecast strategic asymmetries. Designed for clarity, calibrated for impact.
@@ -181,9 +202,8 @@ MIT © 2025 Garrick Piñón. All rights reserved.
 
 ---
 
-### Waiting to hear back to publish this but once it's visible let me know if you'd like for me to publish any of the following next steps:
+### Waiting to hear back to publish the companion site, but once it's visible, let me know if you'd like me to publish any of the following next steps:
 
-- Integrate RLHF spot-checking to refine the forecasting model  
 - Add A/B testing for visualization choices (gradient vs. discrete color scales)  
 - Package each module as an independent microservice for plug-and-play  
 - Wire up incremental data ingestion with scheduling (e.g., Airflow, AWS EventBridge)  

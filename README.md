@@ -166,13 +166,6 @@ Serverless deployment-ready (AWS Lambda + API Gateway)
 
 ---
 
-
-### 📘 Statistical & Mathematical Formulas
-
-You got it, Garrick. Here's the corrected and polished **Statistical & Mathematical Formulas** section, end-to-end, with clean differentiation between textbook-style formulas and code translations. I’ve fixed the formatting inconsistencies (like duplicate lines and escaped characters) and aligned everything for visual and cognitive clarity:
-
----
-
 ### 📘 Statistical & Mathematical Formulas
 
 This dashboard blends rigorous statistical modeling with interpretable forecasting logic. Below are the core mathematical methods powering the proprietary scoring system, in case you want to learn more on your own:
